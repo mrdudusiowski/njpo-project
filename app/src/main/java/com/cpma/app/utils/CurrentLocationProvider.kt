@@ -1,133 +1,118 @@
-package com.cpma.app.utils;
+package com.cpma.app.utils
 
-import android.annotation.SuppressLint;
-import android.app.Service;
-import android.content.Context;
-import android.content.Intent;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
-import android.os.Bundle;
-import android.os.IBinder;
+import android.annotation.SuppressLint
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import android.os.Bundle
+import android.os.IBinder
 
+class CurrentLocationProvider(private val mContext: Context) : Service(), LocationListener {
 
-public class CurrentLocationProvider extends Service implements LocationListener {
-
-    private final Context mContext;
-    boolean isGPSEnabled = false;
-    boolean isNetworkEnabled = false;
-    boolean canGetLocation = false;
-    Location location;
-    double latitude;
-    double longitude;
-    private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10; //50 meters
-    private static final long MIN_TIME_BW_UPDATES = 1000 * 60 * 1; //5 minutes
-    protected LocationManager locationManager;
-
-    public CurrentLocationProvider(Context context) {
-        this.mContext = context;
-        getLocation();
-    }
+    private var isGPSEnabled = false
+    private var isNetworkEnabled = false
+    private var canGetLocation = false
+    private var location: Location? = null
+    private var latitude = 0.0
+    private var longitude = 0.0
+    protected var locationManager: LocationManager? = null
 
     @SuppressLint("MissingPermission")
-    public Location getLocation() {
+    fun getLocation(): Location? {
         try {
-            locationManager = (LocationManager) mContext.getSystemService(LOCATION_SERVICE);
-
-            isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-            isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-
-            if (isGPSEnabled && isNetworkEnabled)  {
-                this.canGetLocation = true;
+            locationManager = mContext.getSystemService(LOCATION_SERVICE) as LocationManager
+            isGPSEnabled = locationManager!!.isProviderEnabled(LocationManager.GPS_PROVIDER)
+            isNetworkEnabled = locationManager!!.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+            if (isGPSEnabled && isNetworkEnabled) {
+                canGetLocation = true
                 if (isNetworkEnabled) {
-                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
-                                                            MIN_TIME_BW_UPDATES,
-                                                            MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
-
+                    locationManager!!.requestLocationUpdates(
+                        LocationManager.NETWORK_PROVIDER,
+                        MIN_TIME_BW_UPDATES,
+                        MIN_DISTANCE_CHANGE_FOR_UPDATES.toFloat(), this
+                    )
                     if (locationManager != null) {
-                        location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-
+                        location =
+                            locationManager!!.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
                         if (location != null) {
-                            latitude = location.getLatitude();
-                            longitude = location.getLongitude();
+                            latitude = location!!.latitude
+                            longitude = location!!.longitude
                         }
                     }
                 }
                 if (isGPSEnabled) {
                     if (location == null) {
-                        locationManager.requestLocationUpdates(
-                                LocationManager.GPS_PROVIDER,
-                                MIN_TIME_BW_UPDATES,
-                                MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
-
+                        locationManager!!.requestLocationUpdates(
+                            LocationManager.GPS_PROVIDER,
+                            MIN_TIME_BW_UPDATES,
+                            MIN_DISTANCE_CHANGE_FOR_UPDATES.toFloat(), this
+                        )
                         if (locationManager != null) {
-                            location = locationManager
-                                    .getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
+                            location = locationManager!!
+                                .getLastKnownLocation(LocationManager.GPS_PROVIDER)
                             if (location != null) {
-                                latitude = location.getLatitude();
-                                longitude = location.getLongitude();
+                                latitude = location!!.latitude
+                                longitude = location!!.longitude
                             }
                         }
                     }
                 }
             }
-
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-
-        return location;
+        return location
     }
 
-    public void stopUsingGPS(){
-        if(locationManager != null){
-            locationManager.removeUpdates(CurrentLocationProvider.this);
+    fun stopUsingGPS() {
+        if (locationManager != null) {
+            locationManager!!.removeUpdates(this@CurrentLocationProvider)
         }
     }
 
-    public double getLatitude(){
-        if(location != null){
-            latitude = location.getLatitude();
+    fun getLatitude(): Double {
+        if (location != null) {
+            latitude = location!!.latitude
         }
-        return latitude;
+        return latitude
     }
 
-    public double getLongitude(){
-        if(location != null){
-            longitude = location.getLongitude();
+    fun getLongitude(): Double {
+        if (location != null) {
+            longitude = location!!.longitude
         }
-        return longitude;
+        return longitude
     }
 
-    public boolean canGetLocation() {
-        return this.canGetLocation;
+    fun canGetLocation(): Boolean {
+        return canGetLocation
     }
 
-    @Override
-    public void onLocationChanged(Location location) {
-        this.location = location;
+    override fun onLocationChanged(location: Location) {
+        this.location = location
     }
 
-    @Override
-    public void onProviderDisabled(String provider) {
+    override fun onProviderDisabled(provider: String) {}
+    override fun onProviderEnabled(provider: String) {}
+    override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
+    override fun onBind(arg0: Intent): IBinder? {
+        return null
     }
 
-    @Override
-    public void onProviderEnabled(String provider) {
+    override fun onDestroy() {
+        super.onDestroy()
     }
 
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
+    companion object {
+        private const val MIN_DISTANCE_CHANGE_FOR_UPDATES: Long = 10 //50 meters
+        private const val MIN_TIME_BW_UPDATES = (1000 * 60 * 1 //5 minutes
+                ).toLong()
     }
 
-    @Override
-    public IBinder onBind(Intent arg0) {
-        return null;
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
+    init {
+        getLocation()
     }
 }
